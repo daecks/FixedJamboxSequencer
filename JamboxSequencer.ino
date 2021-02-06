@@ -1,17 +1,17 @@
-//Block Step Sequencer Demo
-//For use on JamBox (HackerBox #0028)
-//  Each of 8 buttons turns on or off a note for the current beat
-//  5th knob raises and lowers tempo
-//  4th knob controls volume
-//  3rd knob shifts toward a square wav -- go retro!
-//  2nd knob adjsuts pitch, makes things weird.
-//  1st knob does nothing.
+// Block Step Sequencer Demo
+// For use on JamBox (HackerBox #0028)
+// Each of 8 buttons turns on or off a note for the current beat
+// 5th knob raises and lowers tempo
+// 4th knob controls volume
+// 3rd knob shifts toward a square wav -- go retro!
+// 2nd knob adjusts pitch, makes things weird.
+// 1st knob does nothing.
 //
 // This was originally adapted from the Jambox instructable at 
 // https://www.instructables.com/id/HACKERBOX-0028-JamBox/, however
 // it now bears little resemblance to the original.  This fixes a 
 // bunch of issues present in the original example, which would just 
-// produce varrying samples of garbled audio from the PCM chip
+// produce varying samples of garbled audio from the PCM chip
 //  (*) The DAC expects its samples to be LSB
 //  (*) The pre-buffered waveforms introduced weird noise at the
 //      end of each cycle because they didn't end exactly at the
@@ -46,11 +46,11 @@
 #define SEQUENCER_COLUMN_COUNT (NUMBER_OF_GRIDS * NOTE_COUNT)
 
 // Defines which potentiometers control which functions
-#define POTENTIOMETER_COUNT 5
-#define POTENTIOMETER_TEMPO 4 // Adjust the sequencer tempo
+#define POTENTIOMETER_COUNT  5
+#define POTENTIOMETER_TEMPO  4 // Adjust the sequencer tempo
 #define POTENTIOMETER_VOLUME 3 // Adjust the volume (gain)
 #define POTENTIOMETER_SQUARE 2 // Transitions sinnal between a sin and square wave
-#define POTENTIOMETER_PITCH 1 // Adjusts pitch up and down an octave
+#define POTENTIOMETER_PITCH  1 // Adjusts pitch up and down an octave
 
 // The length of the buffer we push to the DAC on each loop.
 #define BUFFER_LENGTH 60
@@ -74,24 +74,24 @@ static const int potentiometerPins[POTENTIOMETER_COUNT] = {32, 33, 34, 35, 36};
 static const float noteFrequencies[NOTE_COUNT] = {264, 296.33, 332.62, 352.4, 395.56, 444, 498.37, 528.01};
 
 static const i2s_config_t I2S_CONFIG = {
-     // configures the ESP32 to act as an I2S master.
-     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+    // configures the ESP32 to act as an I2S master.
+    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
 
-     // Sets the sample rate.
-     .sample_rate = SAMPLE_RATE_HZ,
+    // Sets the sample rate.
+    .sample_rate = SAMPLE_RATE_HZ,
 
-     // Sets the sampel rate, two channels of 16 bits each.
-     .bits_per_sample = (i2s_bits_per_sample_t) 16,
-     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+    // Sets the sampel rate, two channels of 16 bits each.
+    .bits_per_sample = (i2s_bits_per_sample_t) 16,
+    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
 
-     // Sets the I2s format.  The DAC expects LSB.
-     .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_LSB),
+    // Sets the I2s format.  The DAC expects LSB.
+    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_LSB),
 
-     // Not sure what these do.  Docs weren't much help ¯\_(ツ)_/¯
-     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-     .dma_buf_count = 6,
-     .dma_buf_len = BUFFER_LENGTH,
-     .use_apll = false
+    // Not sure what these do.  Docs weren't much help ¯\_(ツ)_/¯
+    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+    .dma_buf_count = 6,
+    .dma_buf_len = BUFFER_LENGTH,
+    .use_apll = false
 };
 
 // Configures which pins we're using for I2S.
@@ -134,112 +134,112 @@ int tempoDurationMs = 0;
 int lastAdvance = 0;
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  // Start the I2S driver, which is needed to comunicate the the DAC.
-  i2s_driver_install(I2S_NUM, &I2S_CONFIG, 0, NULL);
-  i2s_set_pin(I2S_NUM, &I2S_PIN_CONFIG);
-  i2s_set_sample_rates(I2S_NUM, SAMPLE_RATE_HZ);
+    // Start the I2S driver, which is needed to comunicate the the DAC.
+    i2s_driver_install(I2S_NUM, &I2S_CONFIG, 0, NULL);
+    i2s_set_pin(I2S_NUM, &I2S_PIN_CONFIG);
+    i2s_set_sample_rates(I2S_NUM, SAMPLE_RATE_HZ);
 
-  // Configure the pinmode for the buttons and pots.
-  analogReadResolution(10);
-  for (int i = 0 ; i < NOTE_COUNT; i++) {
-    pinMode(buttonPins[i], INPUT_PULLDOWN);
+    // Configure the pinmode for the buttons and pots.
+    analogReadResolution(10);
+    for (int i = 0 ; i < NOTE_COUNT; i++) {
+        pinMode(buttonPins[i], INPUT_PULLDOWN);
 
-    // Listen for button events on an interrupt.
-    attachInterrupt(digitalPinToInterrupt(buttonPins[i]), buttonInterrupt, RISING);
-  }
-  for (int i = 0; i < POTENTIOMETER_COUNT; i++) {
-    pinMode(potentiometerPins[i], INPUT);
-  }
+        // Listen for button events on an interrupt.
+        attachInterrupt(digitalPinToInterrupt(buttonPins[i]), buttonInterrupt, RISING);
+    }
+    for (int i = 0; i < POTENTIOMETER_COUNT; i++) {
+        pinMode(potentiometerPins[i], INPUT);
+    }
 
-  // Scroll "Jambox" across the screen.
-  ledMatrix.init();
-  scrollJamboxText();
+    // Scroll "Jambox" across the screen.
+    ledMatrix.init();
+    scrollJamboxText();
 
-  // For each of the notes, precompute how much to advance its phase for each sample.
-  // If "f" is frequency in Hz and "t" is time in seconds, then sin(t * f * 2 * PI)
-  // describes a wave of frequency f.  Since each sample jumps 1/SAMPLE_RATE_HZ
-  // seconds forward in time,  (PI * 2 * f)/SAMPLE_RATE_HZ describes how much each
-  // frequency jumps for each new sample.
-  for (int i = 0 ; i < NOTE_COUNT; i++) {
-    frequencySteps[i] = (PI * 2 * noteFrequencies[i])/SAMPLE_RATE_HZ;
-  }
+    // For each of the notes, precompute how much to advance its phase for each sample.
+    // If "f" is frequency in Hz and "t" is time in seconds, then sin(t * f * 2 * PI)
+    // describes a wave of frequency f.  Since each sample jumps 1/SAMPLE_RATE_HZ
+    // seconds forward in time,  (PI * 2 * f)/SAMPLE_RATE_HZ describes how much each
+    // frequency jumps for each new sample.
+    for (int i = 0 ; i < NOTE_COUNT; i++) {
+        frequencySteps[i] = (PI * 2 * noteFrequencies[i])/SAMPLE_RATE_HZ;
+    }
 
-  // Start streaming sample to the DAC on a separate thread.
-  xTaskCreatePinnedToCore(
-                    soundLoop,   /* Function to run on this thread */
-                    "unused", /* Name of the thread */
-                    10000,      /* Thread stack size */
-                    NULL,
-                    0,          /* Priority of the task */
-                    NULL,
-                    0);  /* Which core the thread should run on */
+    // Start streaming sample to the DAC on a separate thread.
+    xTaskCreatePinnedToCore(
+            soundLoop,   /* Function to run on this thread */
+            "unused", /* Name of the thread */
+            10000,      /* Thread stack size */
+            NULL,
+            0,          /* Priority of the task */
+            NULL,
+            0);  /* Which core the thread should run on */
 }
 
 void loop() {
-  // Read each potentiometer and store it.  These values are in the range 0...1023
-  for (int i = 0; i < POTENTIOMETER_COUNT; i++) {
-    pots[i] = analogRead(potentiometerPins[i]);
-  }
-  // Map the volume potentiometer to the range 0...1
-  volume = map(pots[POTENTIOMETER_VOLUME], 0, 1023, 0, 100)/100.0;
+    // Read each potentiometer and store it.  These values are in the range 0...1023
+    for (int i = 0; i < POTENTIOMETER_COUNT; i++) {
+        pots[i] = analogRead(potentiometerPins[i]);
+    }
+    // Map the volume potentiometer to the range 0...1
+    volume = map(pots[POTENTIOMETER_VOLUME], 0, 1023, 0, 100)/100.0;
 
-  // Get the tempo, which ranges from [60, 800] ms per beat.
-  tempoDurationMs = map(pots[POTENTIOMETER_TEMPO], 0, 1023, 800, 60);
+    // Get the tempo, which ranges from [60, 800] ms per beat.
+    tempoDurationMs = map(pots[POTENTIOMETER_TEMPO], 0, 1023, 800, 60);
 
-  squareWaveInfluence = map(pots[2], 0, 1023, 0, 100)/100.0;
+    squareWaveInfluence = map(pots[2], 0, 1023, 0, 100)/100.0;
 
-  // This value shifts the pitch from 1x...2x the "normal" pitch
-  pitchShift = map(pots[1], 0, 1023, 100, 200)/100.0;
+    // This value shifts the pitch from 1x...2x the "normal" pitch
+    pitchShift = map(pots[1], 0, 1023, 100, 200)/100.0;
 
-  // Once we've reached the next beat, advance the sequencer.
-  unsigned long time = millis();
-  if (time >= lastAdvance + tempoDurationMs || time < lastAdvance) {
-    lastAdvance = time;
-    advanceSequencerColumn();
-  }
+    // Once we've reached the next beat, advance the sequencer.
+    unsigned long time = millis();
+    if (time >= lastAdvance + tempoDurationMs || time < lastAdvance) {
+        lastAdvance = time;
+        advanceSequencerColumn();
+    }
 }
 
 /**
  * Gets called every time the sequencer advances.
  */
 void advanceSequencerColumn() {
-  // Increment and wrap the current column.
-  currentColumn = (++currentColumn)%(SEQUENCER_COLUMN_COUNT);
-  
-  // Reset each button's state and trigger the interrupt to read them again.
-  for (int note = 0 ; note < NOTE_COUNT; note++) {
-    if (buttonState[note]) {
-      gridState[currentColumn][note] ^= true;
-      buttonState[note] = digitalRead(buttonPins[note]);
-    }
-  }
+    // Increment and wrap the current column.
+    currentColumn = (++currentColumn)%(SEQUENCER_COLUMN_COUNT);
 
-  // Redraw the pixels of the LED matrix.
-  ledMatrix.clear();
-  for (int column = 0; column < SEQUENCER_COLUMN_COUNT; column++) {
-    for (int note = 0; note < NOTE_COUNT; note++) {
-      if (column == currentColumn || gridState[column][note]) {
-        ledMatrix.setPixel(column, note);
-      }
+    // Reset each button's state and trigger the interrupt to read them again.
+    for (int note = 0 ; note < NOTE_COUNT; note++) {
+        if (buttonState[note]) {
+            gridState[currentColumn][note] ^= true;
+            buttonState[note] = digitalRead(buttonPins[note]);
+        }
     }
-  }
-  ledMatrix.commit();
+
+    // Redraw the pixels of the LED matrix.
+    ledMatrix.clear();
+    for (int column = 0; column < SEQUENCER_COLUMN_COUNT; column++) {
+        for (int note = 0; note < NOTE_COUNT; note++) {
+            if (column == currentColumn || gridState[column][note]) {
+                ledMatrix.setPixel(column, note);
+            }
+        }
+    }
+    ledMatrix.commit();
 }
 
 /**
  * Scrolls the word "Jambox" across the screen.
  */
 void scrollJamboxText() {
-  ledMatrix.setText("Jambox");
-  for (int i=0; i<74; i++) {
-    ledMatrix.clear();
-    ledMatrix.scrollTextLeft();
-    ledMatrix.drawText();
-    ledMatrix.commit();
-    delay(10);
-  }
+    ledMatrix.setText("Siassi sucks!");
+    for (int i=0; i<120; i++) {
+        ledMatrix.clear();
+        ledMatrix.scrollTextLeft();
+        ledMatrix.drawText();
+        ledMatrix.commit();
+        delay(10);
+    }
 }
 
 /**
@@ -247,9 +247,9 @@ void scrollJamboxText() {
  * bus will take them.
  */
 void soundLoop( void * pvParameters ){
-  while(true){
-    writeSamples();
-  }
+    while(true){
+        writeSamples();
+    }
 }
 
 /**
@@ -261,36 +261,36 @@ static void writeSamples() {
         double sample = 0;
         int number = 0;
         for (int i = 0; i < NOTE_COUNT; i++) {
-          if (gridState[currentColumn][i] > 0) {
-            frequencyCurrent[i] += frequencySteps[i]*pitchShift;
+            if (gridState[currentColumn][i] > 0) {
+                frequencyCurrent[i] += frequencySteps[i]*pitchShift;
 
-            // If frequencyCurrent starts getting big, then the 
-            // accuracy of small increments starts to suffer.  Trim it 
-            // down since sin(a + n*2*PI) == sin(a)
-            if (frequencyCurrent[i] > PI2) {
-              frequencyCurrent[i] -= PI2;
-            }
+                // If frequencyCurrent starts getting big, then the 
+                // accuracy of small increments starts to suffer.  Trim it 
+                // down since sin(a + n*2*PI) == sin(a)
+                if (frequencyCurrent[i] > PI2) {
+                    frequencyCurrent[i] -= PI2;
+                }
 
-            // Compute the sin wave.
-            double contribution = sin(frequencyCurrent[i]);
-            
-            // If the square wave should contribute, add it here.
-            if (squareWaveInfluence > 0) {
-              if (contribution > 0) {
-                contribution = squareWaveInfluence + contribution * (1-squareWaveInfluence);
-              } else {
-                contribution = -1*squareWaveInfluence + contribution * (1-squareWaveInfluence);
-              }
+                // Compute the sin wave.
+                double contribution = sin(frequencyCurrent[i]);
+
+                // If the square wave should contribute, add it here.
+                if (squareWaveInfluence > 0) {
+                    if (contribution > 0) {
+                        contribution = squareWaveInfluence + contribution * (1-squareWaveInfluence);
+                    } else {
+                        contribution = -1*squareWaveInfluence + contribution * (1-squareWaveInfluence);
+                    }
+                }
+                sample += contribution * SAMPLE_SCALE * volume;
+                number++;
             }
-            sample += contribution * SAMPLE_SCALE * volume;
-            number++;
-          }
         }
 
         // This kind of channel mixing would normally distort the audio, but we can 
         // get away with it because our signals are very simple.
         if (number > 1) {
-          sample /= number;
+            sample /= number;
         }
 
         // I2S format is to send two values for each sample, the left and right channels.
@@ -306,10 +306,9 @@ static void writeSamples() {
  * Gets triggered any time a button is pressed and stores that the button was pressed.
  */
 void buttonInterrupt() {
-  for (int note = 0; note < NOTE_COUNT; note++){
-    if (digitalRead(buttonPins[note]) == HIGH) {
-      buttonState[note] = true;
+    for (int note = 0; note < NOTE_COUNT; note++){
+        if (digitalRead(buttonPins[note]) == HIGH) {
+            buttonState[note] = true;
+        }
     }
-  }
 }
-
